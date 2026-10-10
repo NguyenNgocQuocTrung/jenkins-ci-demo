@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -110,7 +109,6 @@ updated = re.sub(
 
 path.write_text(updated)
 PY
-
                         git add jenkins-demo/deployment.yaml
 
                         if git diff --cached --quiet; then
