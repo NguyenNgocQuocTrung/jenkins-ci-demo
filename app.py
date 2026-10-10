@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.get("/")
 def home():
-    return jsonify(message="Hello from Jenkins CI/CD!")
+    return jsonify(message="Hello from Jenkins CI/CD! Im mr Trung")
 
 
 @app.get("/health")
