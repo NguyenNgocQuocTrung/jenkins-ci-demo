@@ -58,7 +58,7 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Update GitOps') {
             steps {
                 withCredentials([
@@ -84,31 +84,9 @@ pipeline {
                         IMAGE="goodboynhatrang/jenkins-ci-demo:$IMAGE_TAG"
                         export IMAGE
 
-                        python3 <<'PY'
-import os
-import re
-from pathlib import Path
+                        python3 "$WORKSPACE/update_image.py" \
+                          jenkins-demo/deployment.yaml
 
-path = Path("jenkins-demo/deployment.yaml")
-content = path.read_text()
-
-pattern = r"(?m)^(\s*image:\s*).+$"
-matches = re.findall(pattern, content)
-
-if len(matches) != 1:
-    raise SystemExit(
-        f"Expected exactly one image field, found {len(matches)}"
-    )
-
-updated = re.sub(
-    pattern,
-    lambda match: match.group(1) + os.environ["IMAGE"],
-    content,
-    count=1,
-)
-
-path.write_text(updated)
-PY
                         git add jenkins-demo/deployment.yaml
 
                         if git diff --cached --quiet; then
