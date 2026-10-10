@@ -7,7 +7,7 @@ def test_home():
     response = client.get("/")
 
     assert response.status_code == 200
-    assert response.get_json()["message"] == "Hello from Jenkins CI/CD!"
+    assert response.get_json()["message"] == "Hello from Jenkins CI/CD! Im mr Trung"
 
 
 def test_health():
