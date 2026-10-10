@@ -42,7 +42,9 @@ pipeline {
                     )
                 ]) {
                     sh '''
+                        set -eu
                         set +x
+
                         IMAGE="$DOCKERHUB_USER/jenkins-ci-demo:$IMAGE_TAG"
 
                         echo "$DOCKERHUB_TOKEN" | docker login \
@@ -57,14 +59,78 @@ pipeline {
                 }
             }
         }
+
+        stage('Update GitOps') {
+            steps {
+                withCredentials([
+                    gitUsernamePassword(
+                        credentialsId: 'github-gitops',
+                        gitToolName: 'Default'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+
+                        rm -rf gitops
+
+                        git clone \
+                          https://github.com/NguyenNgocQuocTrung/argocd-lab.git \
+                          gitops
+
+                        cd gitops
+
+                        git config user.name "Jenkins CI"
+                        git config user.email "jenkins-ci@users.noreply.github.com"
+
+                        IMAGE="goodboynhatrang/jenkins-ci-demo:$IMAGE_TAG"
+                        export IMAGE
+
+                        python3 <<'PY'
+import os
+import re
+from pathlib import Path
+
+path = Path("jenkins-demo/deployment.yaml")
+content = path.read_text()
+
+pattern = r"(?m)^(\s*image:\s*).+$"
+matches = re.findall(pattern, content)
+
+if len(matches) != 1:
+    raise SystemExit(
+        f"Expected exactly one image field, found {len(matches)}"
+    )
+
+updated = re.sub(
+    pattern,
+    lambda match: match.group(1) + os.environ["IMAGE"],
+    content,
+    count=1,
+)
+
+path.write_text(updated)
+PY
+
+                        git add jenkins-demo/deployment.yaml
+
+                        if git diff --cached --quiet; then
+                            echo "Image unchanged; nothing to commit."
+                        else
+                            git commit -m "Update demo image to $IMAGE_TAG"
+                            git push origin HEAD:main
+                        fi
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'CI pipeline succeeded!'
+            echo 'CI/CD pipeline succeeded!'
         }
         failure {
-            echo 'CI pipeline failed. Check the stage logs.'
+            echo 'Pipeline failed. Check the stage logs.'
         }
     }
 }
